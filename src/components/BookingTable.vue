@@ -51,13 +51,13 @@
                 <div class="event-title">{{ getEventTitle(item) }}</div>
                 <div class="event-details">
                   <div v-if="item.type === 'order'">
-                    {{ formatTime(item.start_time) }}–{{ formatTime(item.end_time) }}<br />
-                    Статус: {{ getOrderStatusText(item.status) }}
+                    {{ formatTime((item as Order).start_time) }}–{{ formatTime((item as Order).end_time) }}<br />
+                    Статус: {{ getOrderStatusText((item as Order).status) }}
                   </div>
                   <div v-else>
-                    {{ item.name_for_reservation }} • {{ item.num_people }} чел<br />
-                    📞 {{ item.phone_number }}<br />
-                    {{ formatTime(item.seating_time) }}–{{ formatTime(item.end_time) }}
+                    {{ (item as Reservation).name_for_reservation }} • {{ (item as Reservation).num_people }} чел<br />
+                    📞 {{ (item as Reservation).phone_number }}<br />
+                    {{ formatTime((item as Reservation).seating_time) }}–{{ formatTime((item as Reservation).end_time) }}
                   </div>
                 </div>
               </div>
@@ -218,9 +218,10 @@ const getEventStyle = (item: AnyItem) => {
     height: `${height}px`,
     left: `${leftPercent}%`,
     width: `${widthPercent}%`,
-    position: 'absolute',
+    position: 'absolute' as const,
     zIndex: 999999999999999999999 - getOverlappingCount(item),
   }
+
 }
 
 const activeEventId = ref<string | number | null>(null)
@@ -269,14 +270,16 @@ const visibleHours = computed(() => {
 
 const getEventClass = (item: AnyItem) =>
   item.type === 'order'
-    ? { New: 'order-new', Bill: 'order-bill', Closed: 'order-closed', Banquet: 'order-banquet' }[item.status] || ''
+    ? { New: 'order-new', Bill: 'order-bill', Closed: 'order-closed', Banquet: 'order-banquet' }[
+        item.status
+      ] || ''
     : {
-    'Живая очередь': 'queue',
-    Новая: 'reservation-new',
-    Заявка: 'reservation-pending',
-    Открыт: 'reservation-open',
-    Закрыт: 'reservation-cancelled',
-  }[item.status] || ''
+        'Живая очередь': 'queue',
+        Новая: 'reservation-new',
+        Заявка: 'reservation-pending',
+        Открыт: 'reservation-open',
+        Закрыт: 'reservation-cancelled',
+      }[item.status] || ''
 
 const getEventTitle = (item: AnyItem) => (item.type === 'order' ? 'Заказ' : 'Бронь')
 const getOrderStatusText = (status: string) =>
@@ -284,9 +287,14 @@ const getOrderStatusText = (status: string) =>
 
 onMounted(async () => {
   const res = await fetch('https://hh.frontend.ark.software/api/booking')
-  const data = await res.json()
+  const data: {
+    available_days: string[]
+    tables: Table[]
+    restaurant: { opening_time: string; closing_time: string }
+  } = await res.json()
   days.value = data.available_days
-  allZones.value = [...new Set(data.tables.map((t: Table) => t.zone))]
+  const zones = data.tables.map((t: Table) => t.zone)
+  allZones.value = [...new Set(zones)]
   selectedZones.value = [...allZones.value]
   tables.value = data.tables
   openingTime.value = data.restaurant.opening_time
