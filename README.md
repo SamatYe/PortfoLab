@@ -20,6 +20,8 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 npm install
 ```
 
+# * [Перейти к развернутому приложению](https://portfo-lab-28iy.vercel.app/)
+
 ### Compile and Hot-Reload for Development
 
 ```sh
